@@ -103,7 +103,7 @@ if (command === 'getid') {
 }
 
 // 2. config එක ලෝඩ් කරගන්නවා
-const config = require('./config');
+
 
 // 3. අනෙක් කමාන්ඩ්ස් සඳහා ගෲප් එක config එකේ තියෙනවාදැයි බලනවා
 // (Owner ට මේක බලපාන්නේ නැති වෙන්න ඕන නම් config.owner චෙක් එකක් දාන්න පුළුවන්)
