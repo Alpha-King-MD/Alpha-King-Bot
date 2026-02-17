@@ -206,9 +206,9 @@ if (!isAllowedGroup && !isOwner) {
 ┃ ┗━━━━━━━━━━━━━━┈⊷
 ┃
 ┃ ┏━━━◈ *ADMIN COMMANDS* (Only Admin)━━━┈⊷
-┃ ┃ ➥ *${config.prefix}kick* - Remove an user (Coming Soon)
-┃ ┃ ➥ *${config.prefix}promote* - Make group admin (Coming Soon)
-┃ ┃ ➥ *${config.prefix}demote* - Remove fom admin (Coming Soon)
+┃ ┃ ➥ *${config.prefix}kick* - Remove an user
+┃ ┃ ➥ *${config.prefix}promote* - Make group admin
+┃ ┃ ➥ *${config.prefix}demote* - Remove fom admin
 ┃ ┃ ➥ *${config.prefix}mute* - Mute this group (Coming Soon)
 ┃ ┃ ➥ *${config.prefix}unmute* - Unmute this group (Coming Soon)
 ┃ ┗━━━━━━━━━━━━━━┈⊷
@@ -866,11 +866,91 @@ break;
 
 //----------------------------------------------------------------------------------------------------------------------------
 
-// 17
+// 17 Promote
+
+case 'promote': {
+    const config = require('./config');
+    
+    // 1. ගෲප් එකක්ද කියලා බලනවා
+    if (!msg.key.remoteJid.endsWith('@g.us')) return await sock.sendMessage(remoteJid, { text: '❌ මේ කමාන්ඩ් එක ගෲප් ඇතුළේ විතරයි වැඩ කරන්නේ!' }, { quoted: msg });
+
+    // 2. ඇඩ්මින් සහ ඔනර් චෙක් එක
+    const groupMetadata = await sock.groupMetadata(remoteJid);
+    const participants = groupMetadata.participants;
+    const admins = participants.filter(v => v.admin !== null).map(v => v.id);
+
+    const isAdmins = admins.includes(msg.key.participant || msg.key.remoteJid);
+    const isOwner = config.owner.includes(msg.key.participant ? msg.key.participant.split('@')[0] : (msg.key.remoteJid.split('@')[0]));
+
+    if (!isAdmins && !isOwner) {
+        return await sock.sendMessage(remoteJid, { text: '⚠️ ඔබ ඇඩ්මින් කෙනෙක් හෝ බොට් අයිතිකරු විය යුතුය.' }, { quoted: msg });
+    }
+
+    // 3. ප්‍රොමෝට් කළ යුතු පුද්ගලයාව අඳුරගන්නවා (Mention හෝ Reply)
+    let users = msg.message.extendedTextMessage?.contextInfo?.mentionedJid || [];
+    let quotedMsg = msg.message.extendedTextMessage?.contextInfo?.participant;
+    
+    if (quotedMsg && !users.includes(quotedMsg)) {
+        users.push(quotedMsg);
+    }
+
+    if (users.length === 0) return await sock.sendMessage(remoteJid, { text: 'කරුණාකර ඇඩ්මින් කිරීමට අවශ්‍ය පුද්ගලයාව Mention කරන්න හෝ Reply කරන්න.' }, { quoted: msg });
+
+    try {
+        // ඇඩ්මින් බලතල ලබා දීම (promote)
+        await sock.groupParticipantsUpdate(remoteJid, users, "promote");
+        await sock.sendMessage(remoteJid, { react: { text: "🔼", key: msg.key } });
+        await sock.sendMessage(remoteJid, { text: 'සාර්ථකව ඇඩ්මින් බලතල ලබා දුන්නා! 👮‍♂️✅' }, { quoted: msg });
+    } catch (err) {
+        console.log(err);
+        await sock.sendMessage(remoteJid, { text: 'බොට්ට ඇඩ්මින් බලතල නැති නිසා මෙය සිදු කළ නොහැක.' });
+    }
+}
+break;
 
 //----------------------------------------------------------------------------------------------------------------------------
 
-// 18
+// 18 Demote
+
+case 'demote': {
+    const config = require('./config');
+    
+    // 1. ගෲප් එකක්ද කියලා බලනවා
+    if (!msg.key.remoteJid.endsWith('@g.us')) return await sock.sendMessage(remoteJid, { text: '❌ මේ කමාන්ඩ් එක ගෲප් ඇතුළේ විතරයි වැඩ කරන්නේ!' }, { quoted: msg });
+
+    // 2. ඇඩ්මින් සහ ඔනර් චෙක් එක
+    const groupMetadata = await sock.groupMetadata(remoteJid);
+    const participants = groupMetadata.participants;
+    const admins = participants.filter(v => v.admin !== null).map(v => v.id);
+
+    const isAdmins = admins.includes(msg.key.participant || msg.key.remoteJid);
+    const isOwner = config.owner.includes(msg.key.participant ? msg.key.participant.split('@')[0] : (msg.key.remoteJid.split('@')[0]));
+
+    if (!isAdmins && !isOwner) {
+        return await sock.sendMessage(remoteJid, { text: '⚠️ ඔබ ඇඩ්මින් කෙනෙක් හෝ බොට් අයිතිකරු විය යුතුය.' }, { quoted: msg });
+    }
+
+    // 3. බලතල ඉවත් කළ යුතු පුද්ගලයාව අඳුරගන්නවා (Mention හෝ Reply)
+    let users = msg.message.extendedTextMessage?.contextInfo?.mentionedJid || [];
+    let quotedMsg = msg.message.extendedTextMessage?.contextInfo?.participant;
+    
+    if (quotedMsg && !users.includes(quotedMsg)) {
+        users.push(quotedMsg);
+    }
+
+    if (users.length === 0) return await sock.sendMessage(remoteJid, { text: 'කරුණාකර ඇඩ්මින් බලතල ඉවත් කිරීමට අවශ්‍ය පුද්ගලයාව Mention කරන්න හෝ Reply කරන්න.' }, { quoted: msg });
+
+    try {
+        // ඇඩ්මින් බලතල ඉවත් කිරීම (demote)
+        await sock.groupParticipantsUpdate(remoteJid, users, "demote");
+        await sock.sendMessage(remoteJid, { react: { text: "🔽", key: msg.key } });
+        await sock.sendMessage(remoteJid, { text: 'ඇඩ්මින් බලතල සාර්ථකව ඉවත් කළා! 📉✅' }, { quoted: msg });
+    } catch (err) {
+        console.log(err);
+        await sock.sendMessage(remoteJid, { text: 'බොට්ට ඇඩ්මින් බලතල නැති නිසා මෙය සිදු කළ නොහැක.' });
+    }
+}
+break;
 
 //----------------------------------------------------------------------------------------------------------------------------
 
