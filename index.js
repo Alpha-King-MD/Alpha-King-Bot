@@ -740,27 +740,28 @@ case 'reqmovie':
 
 case 'reqgame': {
     const fs = require('fs');
-    const config = require('./config'); // කොන්ෆිග් එක ලෝඩ් කරගන්නවා
+    const { exec } = require('child_process');
     const text = mText.split(' ').slice(1).join(' ');
     const pushName = msg.pushName || 'User';
 
     if (!text) {
-        return await sock.sendMessage(remoteJid, { 
-            text: `හලෝ ${pushName}, කරුණාකර Game එකේ නම ලබා දෙන්න.` 
-        }, { quoted: msg });
+        return await sock.sendMessage(remoteJid, { text: `කරුණාකර Game එකේ නම ලබා දෙන්න.` }, { quoted: msg });
     }
 
-    // 1. WhatsApp හරහා ඔයාට Notification එකක් එවනවා
-    const ownerJid = config.ownernumber + '@s.whatsapp.net';
-    const notifyOwner = `*🎮 NEW GAME REQUEST*\n\n👤 User: ${pushName}\n🕹️ Game: ${text}\n📱 JID: ${remoteJid}`;
-    
-    await sock.sendMessage(ownerJid, { text: notifyOwner });
+    // ෆයිල් එකේ නම මෙතන තියෙනවා
+    const fileName = 'Requested Games.txt';
+    const requestEntry = `\n[${new Date().toLocaleString()}] User: ${pushName} | Game: ${text}`;
 
-    // 2. යූසර්ට රිප්ලයි එක දානවා
-    const successMsg = `*🎮 ALPHA KING REQUEST SYSTEM*\n\nහලෝ ${pushName}, ඔයාගේ ඉල්ලීම සාර්ථකව Admin වෙත යොමු කළා.`;
+    // 1. ෆයිල් එකට ඩේටා ටික එකතු කරනවා
+    fs.appendFileSync(fileName, requestEntry);
+
+    // 2. GitHub එකට Auto-Push කරනවා (නම Quotes ඇතුළේ තියෙන්න ඕනේ)
+    exec(`git add "${fileName}" && git commit -m "New game request: ${text}" && git push`, (err) => {
+        if (err) console.log('GitHub Sync Error: ', err);
+    });
 
     await sock.sendMessage(remoteJid, { react: { text: "🎮", key: msg.key } });
-    await sock.sendMessage(remoteJid, { text: successMsg }, { quoted: msg });
+    await sock.sendMessage(remoteJid, { text: `ස්තුතියි ${pushName}, ඔයාගේ ඉල්ලීම '${fileName}' ලේඛනයට ඇතුළත් කළා!` }, { quoted: msg });
 }
 break;
 
