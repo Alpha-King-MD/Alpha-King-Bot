@@ -738,14 +738,29 @@ case 'reqmovie':
 
 // 14 Reqgame
 
-case 'reqgame':
-    if (!text) return reply("අඩෝ ගේම් එකේ නම ගහපන්! උදා: .reqgame GTA V");
-    
-    const gameReq = `Game: ${text} | User: ${pushName}\n`;
-    fs.appendFileSync('./game_requests.txt', gameReq);
-    
-    reply("එලම මචං! උඹේ Game Request එක සේව් කරගත්තා. 🔥");
-    break;
+case 'reqgame': {
+    const fs = require('fs');
+    const text = mText.split(' ').slice(1).join(' ');
+    const pushName = msg.pushName || 'User';
+
+    if (!text) {
+        return await sock.sendMessage(remoteJid, { 
+            text: `හලෝ ${pushName}, කරුණාකර ඔබට අවශ්‍ය Game එකේ නම ලබා දෙන්න.\n\n*උදා:* .reqgame GTA V` 
+        }, { quoted: msg });
+    }
+
+    // රික්වෙස්ට් එක සේව් කරන විදිය
+    const requestDetail = `[${new Date().toLocaleString()}] Game: ${text} | Requested by: ${pushName}\n`;
+    fs.appendFileSync('./requested_games.txt', requestDetail);
+
+    // සාර්ථකයි කියලා යවන මැසේජ් එක
+    const successMsg = `*🎮 ALPHA KING REQUEST SYSTEM*\n\nහලෝ ${pushName}, ඔබගේ ඉල්ලීම ("${text}") සාර්ථකව සටහන් කරගත්තා. ඉක්මනින්ම බලාපොරොත්තු වන්න!`;
+
+    // React එකක් දාලා මැසේජ් එක යවනවා
+    await sock.sendMessage(remoteJid, { react: { text: "🎮", key: msg.key } });
+    await sock.sendMessage(remoteJid, { text: successMsg }, { quoted: msg });
+}
+break;
 
 //----------------------------------------------------------------------------------------------------------------------------
 
