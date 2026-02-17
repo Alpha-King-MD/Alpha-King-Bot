@@ -20,6 +20,7 @@
   "homepage": "https://github.com/Alpha-King-MD/Alpha-King-Bot#readme",
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@google/generative-ai": "^0.24.1",
     "@whiskeysockets/baileys": "^7.0.0-rc.9",
     "axios": "^1.13.5",
     "express": "^5.2.1",

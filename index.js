@@ -958,32 +958,33 @@ break;
 // 19 AI
 
 case 'ai': {
-    const axios = require('axios');
+    const { GoogleGenerativeAI } = require("@google/generative-ai");
+    const config = require('./config');
     const text = mText.split(' ').slice(1).join(' ');
-    const pushName = msg.pushName || 'User';
-
-    if (!text) {
-        return await sock.sendMessage(remoteJid, { text: `හලෝ ${pushName}, මගෙන් අහන්න ඕන ප්‍රශ්නය ඇතුළත් කරන්න.\n\n*උදාහරණ:* .ai මොකක්ද පෘථිවියේ විශාලම සාගරය?` }, { quoted: msg });
-    }
+    
+    if (!text) return await sock.sendMessage(remoteJid, { text: "ඔව්, මම Alpha AI. මගෙන් මොකක්ද දැනගන්න ඕනේ?" }, { quoted: msg });
 
     await sock.sendMessage(remoteJid, { react: { text: "🧠", key: msg.key } });
 
     try {
-        // නොමිලේ දෙන AI API එකක් පාවිච්චි කරමු (උදාහරණයක් ලෙස)
-        const response = await axios.get(`https://api.simsimi.net/v2/?text=${encodeURIComponent(text)}&lc=en`);
-        const aiReply = response.data.success;
+        const genAI = new GoogleGenerativeAI(config.geminiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-        if (aiReply) {
-            await sock.sendMessage(remoteJid, { 
-                text: `*🤖 ALPHA AI*\n\n${aiReply}` 
-            }, { quoted: msg });
-        } else {
-            await sock.sendMessage(remoteJid, { text: "සමාවන්න, මට ඒ ගැන පිළිතුරක් සොයාගත නොහැකි වුණා." });
-        }
+        // මෙතන තමයි අපි ඌට "Alpha" වෙන්න කියලා උගන්වන්නේ (System Prompt)
+        const prompt = `You are Alpha, a helpful, smart, and friendly AI assistant created by Alpha King. 
+                        Keep your answers concise and act as Alpha. User asked: ${text}`;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const aiReply = response.text();
+
+        await sock.sendMessage(remoteJid, { 
+            text: `*🤖 ALPHA AI*\n\n${aiReply}` 
+        }, { quoted: msg });
 
     } catch (err) {
-        console.log("AI Error: ", err);
-        await sock.sendMessage(remoteJid, { text: "AI පද්ධතියේ දෝෂයක් පවතී. පසුව උත්සාහ කරන්න." });
+        console.error(err);
+        await sock.sendMessage(remoteJid, { text: "සමාවන්න, මගේ පද්ධතියේ පොඩි අවුලක් ආවා. පසුව උත්සාහ කරන්න." });
     }
 }
 break;
