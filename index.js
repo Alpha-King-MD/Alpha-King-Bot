@@ -702,37 +702,39 @@ case 'game':
 
 // 13 Reqmovie
 
-case 'reqmovie':
-            try {
-                const fs = require('fs');
-                const text = mText.split(' ').slice(1).join(' ');
-                const pushName = msg.pushName || 'User';
-                const sender = msg.key.remoteJid;
+case 'reqmovie': {
+    const config = require('./config'); 
+    const text = mText.split(' ').slice(1).join(' ');
+    const pushName = msg.pushName || 'User';
 
-                if (!text) {
-                    return await sock.sendMessage(remoteJid, { 
-                        text: `🎬 හලෝ ${pushName}, කරුණාකර ඔබට අවශ්‍ය චිත්‍රපටයේ නම ලබා දෙන්න.\n\n*උදා:* .reqmovie Deadpool & Wolverine` 
-                    }, { quoted: msg });
-                }
+    if (!text) {
+        return await sock.sendMessage(remoteJid, { text: `හලෝ ${pushName}, කරුණාකර චිත්‍රපටයේ (Movie) නම ලබා දෙන්න.` }, { quoted: msg });
+    }
 
-                // 1. නෝට් එකට දාන්න ඕන විස්තරය හදාගමු
-                const requestDetail = `[${new Date().toLocaleString()}] Movie: ${text} | Requested by: ${pushName} (${sender})\n`;
+    // Config එකේ තියෙන reqno එකම පාවිච්චි කරනවා
+    const targetJid = config.reqno + '@s.whatsapp.net';
 
-                // 2. ෆයිල් එක තියෙනවද බලලා අලුත් ඉල්ලීම එකතු කරමු
-                // 'a' flag එකෙන් කරන්නේ ෆයිල් එක නැත්නම් හදන එක සහ තියෙන එකට අගින් අලුත් දත්ත එකතු කරන එක (Append)
-                fs.appendFileSync('./requested_movies.txt', requestDetail);
+    const notificationText = `*🎬 ALPHA KING - NEW MOVIE REQUEST*\n\n` +
+                             `👤 *User:* ${pushName}\n` +
+                             `🎥 *Movie:* ${text}\n` +
+                             `📅 *Time:* ${new Date().toLocaleString()}`;
 
-                // 3. යූසර්ට දෙන මැසේජ් එක
-                const successMsg = `📝 *ALPHA KING REQUEST SYSTEM* 📝\n\nහලෝ ${pushName}, ඔබගේ ඉල්ලීම ("${text}") අපගේ පද්ධතියට සාර්ථකව ඇතුළත් කර ගත්තා.\n\nඅප එය හැකි ඉක්මනින් දත්ත පද්ධතියට එක් කිරීමට උත්සාහ කරන්නම්. කරුණාකර දින කිහිපයකින් නැවත පරීක්ෂා කර බලන්න. ස්තූතියි! 🍿`;
+    try {
+        // ඔයාගේ නම්බර් එකට මැසේජ් එක යනවා
+        await sock.sendMessage(targetJid, { text: notificationText });
 
-                await sock.sendMessage(remoteJid, { react: { text: "📥", key: msg.key } });
-                await sock.sendMessage(remoteJid, { text: successMsg }, { quoted: msg });
+        // යූසර්ට රිප්ලයි එක
+        await sock.sendMessage(remoteJid, { react: { text: "🎬", key: msg.key } });
+        await sock.sendMessage(remoteJid, { 
+            text: `හලෝ ${pushName}, ඔයාගේ Movie Request එක අපි භාරගත්තා. ඉක්මනින්ම ඒක හොයලා දෙන්නම්!` 
+        }, { quoted: msg });
 
-            } catch (e) {
-                console.error("Request Error:", e);
-                await sock.sendMessage(remoteJid, { text: "❌ ඉල්ලීම සටහන් කර ගැනීමේදී දෝෂයක් ඇති විය." }, { quoted: msg });
-            }
-            break;
+    } catch (err) {
+        console.log("Movie Request Error: ", err);
+        await sock.sendMessage(remoteJid, { text: "සමාවන්න, පද්ධතියේ දෝෂයක් පවතී." });
+    }
+}
+break;
 
 //----------------------------------------------------------------------------------------------------------------------------
 
