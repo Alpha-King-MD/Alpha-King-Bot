@@ -755,8 +755,14 @@ case 'reqgame': {
     // 1. ෆයිල් එකට ඩේටා ටික එකතු කරනවා
     fs.appendFileSync(fileName, requestEntry);
 
-    // 2. GitHub එකට Auto-Push කරනවා (නම Quotes ඇතුළේ තියෙන්න ඕනේ)
-    exec(`git add "${fileName}" && git commit -m "New game request: ${text}" && git push`, (err) => {
+    // 2. GitHub එකට Auto-Push කරනවා (Identity එකත් එක්කම)
+    const gitCmd = `git config --global user.email "alphakingmd1@gmail.com" && ` +
+                   `git config --global user.name "Alpha-King-MD" && ` +
+                   `git add "${fileName}" && ` +
+                   `git commit -m "New game request: ${text}" && ` +
+                   `git push`;
+
+    exec(gitCmd, (err) => {
         if (err) console.log('GitHub Sync Error: ', err);
     });
 
