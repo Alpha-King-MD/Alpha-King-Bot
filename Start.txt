@@ -1,1 +1,8 @@
 node index.js
+
+
+
+
+git commit -m "Update bot commands"
+
+git push
