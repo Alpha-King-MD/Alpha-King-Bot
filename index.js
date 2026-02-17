@@ -97,21 +97,23 @@ async function connectToWhatsApp() {
         const command = mText.toLowerCase().split(' ')[0].slice(config.prefix.length);
         
 
-        // 1. Group ID එක ලබා ගැනීමේ විධානය (ඕනෑම තැනක වැඩ කරයි)
-        if (mText === `${config.prefix}getid`) {
-            await sock.sendMessage(remoteJid, { text: `මෙම ස්ථානයේ ID එක: ${remoteJid}` }, { quoted: msg });
-            return;
-        }
+// 1. මුලින්ම getid එක චෙක් කරනවා (ඕනෑම තැනක වැඩ කරන්න)
+if (command === 'getid') {
+    return await sock.sendMessage(remoteJid, { text: `මෙම ස්ථානයේ ID එක: ${remoteJid}` }, { quoted: msg });
+}
 
-        // 2. Work Mode පරීක්ෂා කිරීම (Groups වල පමණක් වැඩ කිරීමට)
-        if (config.workMode === "groups" && !isGroup) return;
+// 2. config එක ලෝඩ් කරගන්නවා
+const config = require('./config');
 
-        // 3. Allowed Groups වල පමණක් වැඩ කිරීම (ID එක ලිස්ට් එකේ තිබේ නම් පමණි)
-        if (isGroup && !config.allowedGroups.includes(remoteJid)) {
-            // මෙතන return දැම්මොත් ලිස්ට් එකේ නැති ගෲප් වල බොට් වැඩ කරන්නේ නැහැ.
-            // නමුත් මුලින්ම ID එක ගන්න ඕන නිසා අපි දැනට මේක check නොකර ඉමු.
-        }
+// 3. අනෙක් කමාන්ඩ්ස් සඳහා ගෲප් එක config එකේ තියෙනවාදැයි බලනවා
+// (Owner ට මේක බලපාන්නේ නැති වෙන්න ඕන නම් config.owner චෙක් එකක් දාන්න පුළුවන්)
+const isAllowedGroup = config.groups.includes(remoteJid);
+const isOwner = config.owner.includes(msg.key.participant ? msg.key.participant.split('@')[0] : (msg.key.remoteJid.split('@')[0]));
 
+if (!isAllowedGroup && !isOwner) {
+    // ගෲප් එක ලිස්ට් එකේ නැත්නම් සහ ඔනර් නෙවෙයි නම් බොට් මුකුත්ම කරන්නේ නැහැ
+    return; 
+}
         // --- Commands Start Here ---
 
    
@@ -263,6 +265,12 @@ async function connectToWhatsApp() {
                 await sock.sendMessage(remoteJid, { text: pingMsg }, { quoted: msg });
             }
             break;
+
+//----------------------------------------------------------------------------------------------------------------------------
+
+// 04 Getid
+
+// On Top
                 
 //----------------------------------------------------------------------------------------------------------------------------
 
