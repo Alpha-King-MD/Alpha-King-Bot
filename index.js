@@ -200,7 +200,7 @@ async function connectToWhatsApp() {
 ┃ ┏━━━◈ *REQUEST COMMANDS*━━━┈⊷
 ┃ ┃ ➥ *${config.prefix}reqmovie* - Request a movie
 ┃ ┃ ➥ *${config.prefix}reqgame* - Request a game
-┃ ┃ ➥ *${config.prefix}reqcomm* - Request a command (Coming Soon)
+┃ ┃ ➥ *${config.prefix}reqcmd* - Request a command (Coming Soon)
 ┃ ┗━━━━━━━━━━━━━━┈⊷
 ┃
 ┃ ┏━━━◈ *ADMIN COMMANDS* (Only Admin)━━━┈⊷
@@ -776,7 +776,43 @@ break;
 
 //----------------------------------------------------------------------------------------------------------------------------
 
-// 15
+// 15 Reqcmd
+
+case 'reqcmd': {
+    const config = require('./config'); 
+    const text = mText.split(' ').slice(1).join(' ');
+    const pushName = msg.pushName || 'User';
+
+    if (!text) {
+        return await sock.sendMessage(remoteJid, { 
+            text: `හලෝ ${pushName}, ඔයා බොට්ට එකතු කරන්න කැමති අලුත් Command එක සහ ඒකෙන් වෙන්න ඕනි දේ පැහැදිලිව ලියන්න.\n\n*උදාහරණ:* .reqcmd අකුරු ලස්සන කරන කමාන්ඩ් එකක් ඕනේ.` 
+        }, { quoted: msg });
+    }
+
+    const targetJid = config.reqno + '@s.whatsapp.net';
+
+    const notificationText = `*🚀 ALPHA KING - NEW FEATURE/COMMAND REQUEST*\n\n` +
+                             `👤 *User:* ${pushName}\n` +
+                             `💡 *Idea:* ${text}\n` +
+                             `📱 *From:* ${remoteJid}\n` +
+                             `📅 *Date:* ${new Date().toLocaleString()}`;
+
+    try {
+        // ඔයාගේ නම්බර් එකට අදහස එනවා
+        await sock.sendMessage(targetJid, { text: notificationText });
+
+        // යූසර්ට රිප්ලයි එක
+        await sock.sendMessage(remoteJid, { react: { text: "💡", key: msg.key } });
+        await sock.sendMessage(remoteJid, { 
+            text: `නියමයි ${pushName}! ඔයාගේ අදහස අපි භාරගත්තා. ඒක බොට්ට එකතු කරන්න පුළුවන්ද කියලා Admin බලයි. ස්තුතියි!` 
+        }, { quoted: msg });
+
+    } catch (err) {
+        console.log("Command Request Error: ", err);
+        await sock.sendMessage(remoteJid, { text: "සමාවන්න, පද්ධතියේ දෝෂයක් පවතී." });
+    }
+}
+break;
 
 //----------------------------------------------------------------------------------------------------------------------------
 
