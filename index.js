@@ -739,35 +739,36 @@ case 'reqmovie':
 // 14 Reqgame
 
 case 'reqgame': {
-    const fs = require('fs');
-    const { exec } = require('child_process');
+    const config = require('./config'); // config file එක ලෝඩ් කරනවා
     const text = mText.split(' ').slice(1).join(' ');
     const pushName = msg.pushName || 'User';
 
     if (!text) {
-        return await sock.sendMessage(remoteJid, { text: `කරුණාකර Game එකේ නම ලබා දෙන්න.` }, { quoted: msg });
+        return await sock.sendMessage(remoteJid, { text: `හලෝ ${pushName}, කරුණාකර Game එකේ නම ලබා දෙන්න.` }, { quoted: msg });
     }
 
-    // ෆයිල් එකේ නම මෙතන තියෙනවා
-    const fileName = 'Requested Games.txt';
-    const requestEntry = `\n[${new Date().toLocaleString()}] User: ${pushName} | Game: ${text}`;
+    // Config එකේ තියෙන නම්බර් එකට JID එක හදාගන්නවා
+    const targetJid = config.reqno + '@s.whatsapp.net';
 
-    // 1. ෆයිල් එකට ඩේටා ටික එකතු කරනවා
-    fs.appendFileSync(fileName, requestEntry);
+    const notificationText = `*🎮 ALPHA KING - NEW GAME REQUEST*\n\n` +
+                             `👤 *User:* ${pushName}\n` +
+                             `🕹️ *Game:* ${text}\n` +
+                             `📅 *Time:* ${new Date().toLocaleString()}`;
 
-    // 2. GitHub එකට Auto-Push කරනවා (Identity එකත් එක්කම)
-    const gitCmd = `git config --global user.email "alphakingmd1@gmail.com" && ` +
-                   `git config --global user.name "Alpha-King-MD" && ` +
-                   `git add "${fileName}" && ` +
-                   `git commit -m "New game request: ${text}" && ` +
-                   `git push`;
+    try {
+        // අදාළ නම්බර් එකට විතරක් notification එක යවනවා
+        await sock.sendMessage(targetJid, { text: notificationText });
 
-    exec(gitCmd, (err) => {
-        if (err) console.log('GitHub Sync Error: ', err);
-    });
+        // ඉල්ලීම කරපු යූසර්ට රිප්ලයි එක සහ Reaction එක
+        await sock.sendMessage(remoteJid, { react: { text: "📥", key: msg.key } });
+        await sock.sendMessage(remoteJid, { 
+            text: `හලෝ ${pushName}, ඔයාගේ ඉල්ලීම සාර්ථකව සටහන් කරගත්තා. ස්තුතියි!` 
+        }, { quoted: msg });
 
-    await sock.sendMessage(remoteJid, { react: { text: "🎮", key: msg.key } });
-    await sock.sendMessage(remoteJid, { text: `ස්තුතියි ${pushName}, ඔයාගේ ඉල්ලීම '${fileName}' ලේඛනයට ඇතුළත් කළා!` }, { quoted: msg });
+    } catch (err) {
+        console.log("Request System Error: ", err);
+        await sock.sendMessage(remoteJid, { text: "සමාවන්න, පද්ධතියේ දෝෂයක් පවතී." });
+    }
 }
 break;
 
