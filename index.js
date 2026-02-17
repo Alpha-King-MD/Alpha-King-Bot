@@ -199,7 +199,7 @@ async function connectToWhatsApp() {
 ┃
 ┃ ┏━━━◈ *REQUEST COMMANDS*━━━┈⊷
 ┃ ┃ ➥ *${config.prefix}reqmovie* - Request a movie
-┃ ┃ ➥ *${config.prefix}reqgame* - Request a game (Coming Soon)
+┃ ┃ ➥ *${config.prefix}reqgame* - Request a game
 ┃ ┃ ➥ *${config.prefix}reqcomm* - Request a command (Coming Soon)
 ┃ ┗━━━━━━━━━━━━━━┈⊷
 ┃
