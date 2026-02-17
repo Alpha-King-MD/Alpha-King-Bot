@@ -200,7 +200,7 @@ async function connectToWhatsApp() {
 ┃ ┏━━━◈ *REQUEST COMMANDS*━━━┈⊷
 ┃ ┃ ➥ *${config.prefix}reqmovie* - Request a movie
 ┃ ┃ ➥ *${config.prefix}reqgame* - Request a game
-┃ ┃ ➥ *${config.prefix}reqcmd* - Request a command (Coming Soon)
+┃ ┃ ➥ *${config.prefix}reqcmd* - Request a command
 ┃ ┗━━━━━━━━━━━━━━┈⊷
 ┃
 ┃ ┏━━━◈ *ADMIN COMMANDS* (Only Admin)━━━┈⊷
@@ -816,7 +816,42 @@ break;
 
 //----------------------------------------------------------------------------------------------------------------------------
 
-// 16
+// 16 Kick
+
+case 'kick': {
+    const config = require('./config');
+    
+    // 1. Group එකක්ද කියලා බලනවා
+    if (!msg.key.remoteJid.endsWith('@g.us')) return await sock.sendMessage(remoteJid, { text: 'මේ කමාන්ඩ් එක පාවිච්චි කළ හැක්කේ ගෲප් ඇතුළේ පමණි!' }, { quoted: msg });
+
+    // 2. Group Metadata සහ Admins ලා කවුද කියලා ගන්නවා
+    const groupMetadata = await sock.groupMetadata(remoteJid);
+    const participants = groupMetadata.participants;
+    const admins = participants.filter(v => v.admin !== null).map(v => v.id);
+
+    // 3. Command එක දාන කෙනා Admin ද නැත්නම් Owner ද කියලා බලනවා
+    const isAdmins = admins.includes(msg.key.participant || msg.key.remoteJid);
+    const isOwner = config.owner.includes(msg.key.participant ? msg.key.participant.split('@')[0] : '');
+
+    if (!isAdmins && !isOwner) {
+        return await sock.sendMessage(remoteJid, { text: 'සමාවන්න, මේ කමාන්ඩ් එක පාවිච්චි කිරීමට ඔබ ඇඩ්මින් කෙනෙක් හෝ බොට් අයිතිකරු විය යුතුය.' }, { quoted: msg });
+    }
+
+    // 4. Kick කරන්න ඕන කෙනාව අඳුරගන්නවා (Mention කරලා හෝ Reply කරලා)
+    let users = msg.message.extendedTextMessage?.contextInfo?.mentionedJid || [msg.message.extendedTextMessage?.contextInfo?.participant];
+    
+    if (!users || !users[0]) return await sock.sendMessage(remoteJid, { text: 'කරුණාකර ඉවත් කළ යුතු පුද්ගලයාව Mention කරන්න හෝ Reply කරන්න.' }, { quoted: msg });
+
+    try {
+        await sock.groupParticipantsUpdate(remoteJid, users, "remove");
+        await sock.sendMessage(remoteJid, { react: { text: "🚫", key: msg.key } });
+        await sock.sendMessage(remoteJid, { text: 'සාර්ථකව ඉවත් කළා! ✅' }, { quoted: msg });
+    } catch (err) {
+        console.log(err);
+        await sock.sendMessage(remoteJid, { text: 'බොට්ට ඇඩ්මින් බලතල නැති නිසා ඉවත් කිරීමට නොහැක.' });
+    }
+}
+break;
 
 //----------------------------------------------------------------------------------------------------------------------------
 
