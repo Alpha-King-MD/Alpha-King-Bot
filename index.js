@@ -751,7 +751,7 @@ case 'reqgame': {
     }
 
     // 1. WhatsApp හරහා ඔයාට Notification එකක් එවනවා
-    const ownerJid = config.owner + '@s.whatsapp.net';
+    const ownerJid = config.ownernumber + '@s.whatsapp.net';
     const notifyOwner = `*🎮 NEW GAME REQUEST*\n\n👤 User: ${pushName}\n🕹️ Game: ${text}\n📱 JID: ${remoteJid}`;
     
     await sock.sendMessage(ownerJid, { text: notifyOwner });
