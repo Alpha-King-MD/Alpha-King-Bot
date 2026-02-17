@@ -740,23 +740,25 @@ case 'reqmovie':
 
 case 'reqgame': {
     const fs = require('fs');
+    const config = require('./config'); // කොන්ෆිග් එක ලෝඩ් කරගන්නවා
     const text = mText.split(' ').slice(1).join(' ');
     const pushName = msg.pushName || 'User';
 
     if (!text) {
         return await sock.sendMessage(remoteJid, { 
-            text: `හලෝ ${pushName}, කරුණාකර ඔබට අවශ්‍ය Game එකේ නම ලබා දෙන්න.\n\n*උදා:* .reqgame GTA V` 
+            text: `හලෝ ${pushName}, කරුණාකර Game එකේ නම ලබා දෙන්න.` 
         }, { quoted: msg });
     }
 
-    // රික්වෙස්ට් එක සේව් කරන විදිය
-    const requestDetail = `[${new Date().toLocaleString()}] Game: ${text} | Requested by: ${pushName}\n`;
-    fs.appendFileSync('./requested_games.txt', requestDetail);
+    // 1. WhatsApp හරහා ඔයාට Notification එකක් එවනවා
+    const ownerJid = config.owner + '@s.whatsapp.net';
+    const notifyOwner = `*🎮 NEW GAME REQUEST*\n\n👤 User: ${pushName}\n🕹️ Game: ${text}\n📱 JID: ${remoteJid}`;
+    
+    await sock.sendMessage(ownerJid, { text: notifyOwner });
 
-    // සාර්ථකයි කියලා යවන මැසේජ් එක
-    const successMsg = `*🎮 ALPHA KING REQUEST SYSTEM*\n\nහලෝ ${pushName}, ඔබගේ ඉල්ලීම ("${text}") සාර්ථකව සටහන් කරගත්තා. ඉක්මනින්ම බලාපොරොත්තු වන්න!`;
+    // 2. යූසර්ට රිප්ලයි එක දානවා
+    const successMsg = `*🎮 ALPHA KING REQUEST SYSTEM*\n\nහලෝ ${pushName}, ඔයාගේ ඉල්ලීම සාර්ථකව Admin වෙත යොමු කළා.`;
 
-    // React එකක් දාලා මැසේජ් එක යවනවා
     await sock.sendMessage(remoteJid, { react: { text: "🎮", key: msg.key } });
     await sock.sendMessage(remoteJid, { text: successMsg }, { quoted: msg });
 }
