@@ -29,6 +29,21 @@ const fluentFfmpeg = require('fluent-ffmpeg');
 fluentFfmpeg.setFfmpegPath(ffmpegPath);
 
 
+const mongoose = require('mongoose');
+const config = require('./config');
+
+// 🔌 DATABASE CONNECTION
+mongoose.connect(config.banned_list_url)
+    .then(() => console.log("Banned List Database Connected! ✅"))
+    .catch(err => console.log("Database Error: ", err));
+
+// Banned User Structure
+const BannedSchema = new mongoose.Schema({
+    userId: { type: String, required: true, unique: true }
+});
+const BannedUser = mongoose.model('BannedUser', BannedSchema);
+
+
 
 function runtime(seconds) {
     seconds = Number(seconds);
@@ -114,6 +129,19 @@ if (!isAllowedGroup && !isOwner) {
     // ගෲප් එක ලිස්ට් එකේ නැත්නම් සහ ඔනර් නෙවෙයි නම් බොට් මුකුත්ම කරන්නේ නැහැ
     return; 
 }
+
+// 🚫 BANNED USER CHECK
+const sender = msg.key.participant || msg.key.remoteJid;
+const isBanned = await BannedUser.findOne({ userId: sender });
+
+// යූසර් බෑන් නම් සහ එයා Owner නෙවෙයි නම් මෙතනින් නවතිනවා
+if (isBanned && !config.owner.includes(sender.split('@')[0])) {
+    return; 
+}
+
+
+
+
         // --- Commands Start Here ---
 
    
@@ -209,7 +237,7 @@ if (!isAllowedGroup && !isOwner) {
 ┃ ┃ ➥ *${config.prefix}kick* - Remove an user
 ┃ ┃ ➥ *${config.prefix}promote* - Make group admin
 ┃ ┃ ➥ *${config.prefix}demote* - Remove fom admin
-┃ ┃ ➥ *${config.prefix}add* - Add a new user (Coming Soon)
+┃ ┃ ➥ *${config.prefix}add* - Add a new user
 ┃ ┃ ➥ *${config.prefix}mute* - Mute an user (Coming Soon)
 ┃ ┃ ➥ *${config.prefix}unmute* - Unmute an user (Coming Soon)
 ┃ ┗━━━━━━━━━━━━━━┈⊷
@@ -998,15 +1026,51 @@ case 'add': {
         await sock.sendMessage(remoteJid, { text: 'පුද්ගලයා ඇඩ් කිරීමට නොහැකි වුණා. සමහරවිට ඔහුගේ Privacy Setting නිසා හෝ බොට්ට ඇඩ්මින් බලතල නැති නිසා විය හැක.' });
     }
 }
-break;SSSSSS
+break;
 
 //----------------------------------------------------------------------------------------------------------------------------
 
-// 20
+// 20 Mute
+
+case 'mute': {
+    const groupMetadata = await sock.groupMetadata(remoteJid);
+    const admins = groupMetadata.participants.filter(v => v.admin !== null).map(v => v.id);
+    const isAdmins = admins.includes(msg.key.participant || msg.key.remoteJid);
+    const isOwner = config.owner.includes(msg.key.participant ? msg.key.participant.split('@')[0] : '');
+
+    if (!isAdmins && !isOwner) return await sock.sendMessage(remoteJid, { text: '⚠️ ඇඩ්මින්ලාට පමණයි!' });
+
+    let user = msg.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || msg.message.extendedTextMessage?.contextInfo?.participant;
+    if (!user) return await sock.sendMessage(remoteJid, { text: 'කරුණාකර යූසර් කෙනෙක්ව Mention කරන්න.' });
+
+    try {
+        await new BannedUser({ userId: user }).save();
+        await sock.sendMessage(remoteJid, { text: `✅ @${user.split('@')[0]} ව පද්ධතියෙන් Mute කළා.`, mentions: [user] });
+    } catch (e) {
+        await sock.sendMessage(remoteJid, { text: 'මොහු දැනටමත් Mute කර ඇත.' });
+    }
+}
+break;
 
 //----------------------------------------------------------------------------------------------------------------------------
 
-// 21
+// 21 Unmute
+
+case 'unmute': {
+    const groupMetadata = await sock.groupMetadata(remoteJid);
+    const admins = groupMetadata.participants.filter(v => v.admin !== null).map(v => v.id);
+    const isAdmins = admins.includes(msg.key.participant || msg.key.remoteJid);
+    const isOwner = config.owner.includes(msg.key.participant ? msg.key.participant.split('@')[0] : '');
+
+    if (!isAdmins && !isOwner) return;
+
+    let user = msg.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || msg.message.extendedTextMessage?.contextInfo?.participant;
+    if (!user) return;
+
+    await BannedUser.deleteOne({ userId: user });
+    await sock.sendMessage(remoteJid, { text: `✅ @${user.split('@')[0]} ව නැවත නිදහස් කළා.`, mentions: [user] });
+}
+break;
 
 //----------------------------------------------------------------------------------------------------------------------------
 
