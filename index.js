@@ -955,39 +955,50 @@ break;
 
 //----------------------------------------------------------------------------------------------------------------------------
 
-// 19 AI
+// 19 Add
 
-case 'ai': {
-    const { GoogleGenerativeAI } = require("@google/generative-ai");
+case 'add': {
     const config = require('./config');
-    const text = mText.split(' ').slice(1).join(' ');
     
-    if (!text) return await sock.sendMessage(remoteJid, { text: "ඔව්, මම Alpha AI. මගෙන් මොකක්ද දැනගන්න ඕනේ?" }, { quoted: msg });
+    // 1. ගෲප් එකක්ද කියලා බලනවා
+    if (!msg.key.remoteJid.endsWith('@g.us')) return await sock.sendMessage(remoteJid, { text: '❌ මේ කමාන්ඩ් එක ගෲප් ඇතුළේ විතරයි වැඩ කරන්නේ!' }, { quoted: msg });
 
-    await sock.sendMessage(remoteJid, { react: { text: "🧠", key: msg.key } });
+    // 2. ඇඩ්මින් සහ ඔනර් චෙක් එක
+    const groupMetadata = await sock.groupMetadata(remoteJid);
+    const admins = groupMetadata.participants.filter(v => v.admin !== null).map(v => v.id);
+    const isAdmins = admins.includes(msg.key.participant || msg.key.remoteJid);
+    const isOwner = config.owner.includes(msg.key.participant ? msg.key.participant.split('@')[0] : (msg.key.remoteJid.split('@')[0]));
+
+    if (!isAdmins && !isOwner) {
+        return await sock.sendMessage(remoteJid, { text: '⚠️ මෙය කළ හැක්කේ ඇඩ්මින්ලාට හෝ බොට් අයිතිකරුට පමණි.' }, { quoted: msg });
+    }
+
+    // 3. නම්බර් එක අරගෙන Format කරනවා
+    let input = mText.split(' ').slice(1).join(''); 
+    if (!input) return await sock.sendMessage(remoteJid, { text: 'කරුණාකර ඇඩ් කළ යුතු නම්බර් එක ලබා දෙන්න.\n*උදා:* .add 0712345678' }, { quoted: msg });
+
+    // නම්බර් එකේ තියෙන +, -, spaces අයින් කරනවා
+    let cleanNumber = input.replace(/[^0-9]/g, '');
+
+    // ලංකාවේ නම්බර් එකක් නම් (07... හෝ 7...) ඒක 94 ට හරවනවා
+    if (cleanNumber.startsWith('0')) {
+        cleanNumber = '94' + cleanNumber.slice(1);
+    } else if (cleanNumber.startsWith('7') && cleanNumber.length === 9) {
+        cleanNumber = '94' + cleanNumber;
+    }
+
+    const userToAdd = cleanNumber + '@s.whatsapp.net';
 
     try {
-        const genAI = new GoogleGenerativeAI(config.geminiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-
-        // මෙතන තමයි අපි ඌට "Alpha" වෙන්න කියලා උගන්වන්නේ (System Prompt)
-        const prompt = `You are Alpha, a helpful, smart, and friendly AI assistant created by Alpha King. 
-                        Keep your answers concise and act as Alpha. User asked: ${text}`;
-
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const aiReply = response.text();
-
-        await sock.sendMessage(remoteJid, { 
-            text: `*🤖 ALPHA AI*\n\n${aiReply}` 
-        }, { quoted: msg });
-
+        await sock.groupParticipantsUpdate(remoteJid, [userToAdd], "add");
+        await sock.sendMessage(remoteJid, { react: { text: "➕", key: msg.key } });
+        await sock.sendMessage(remoteJid, { text: `සාර්ථකව ඇඩ් කළා! ✅` }, { quoted: msg });
     } catch (err) {
-        console.error(err);
-        await sock.sendMessage(remoteJid, { text: "සමාවන්න, මගේ පද්ධතියේ පොඩි අවුලක් ආවා. පසුව උත්සාහ කරන්න." });
+        console.log(err);
+        await sock.sendMessage(remoteJid, { text: 'පුද්ගලයා ඇඩ් කිරීමට නොහැකි වුණා. සමහරවිට ඔහුගේ Privacy Setting නිසා හෝ බොට්ට ඇඩ්මින් බලතල නැති නිසා විය හැක.' });
     }
 }
-break;
+break;SSSSSS
 
 //----------------------------------------------------------------------------------------------------------------------------
 
