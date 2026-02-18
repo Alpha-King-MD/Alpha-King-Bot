@@ -30,7 +30,6 @@ fluentFfmpeg.setFfmpegPath(ffmpegPath);
 
 
 const mongoose = require('mongoose');
-const config = require('./config');
 
 // 🔌 DATABASE CONNECTION
 mongoose.connect(config.banned_list_url)
