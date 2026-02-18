@@ -7,6 +7,6 @@ module.exports = {
     logoPath: "./Media/Images/logo.png", // මෙන්න මෙතනට ලෝගෝ එකේ path එක දුන්නා
     groups: ['120363407305281183@g.us', '120363406667808399@g.us', '22330189328469@lid'],
     workMode: "groups", // 'all' (සෑම තැනකම), 'groups' (ගෲප් වල පමණි), 'private' (Direct messages පමණි)
-    geminiKey: 'මෙතනට_ඔයාගේ_API_KEY_එක_දාන්න',
-    removeBgApiKey: "AIzaSyBQ1gZ01DEQ5b5FjZH1si_-3j0G6N4MrRU" 
+    geminiKey: 'AIzaSyBQ1gZ01DEQ5b5FjZH1si_-3j0G6N4MrRU',
+    removeBgApiKey: "YzBWMFht4vz9LAw9xF2zmKau" 
 };
