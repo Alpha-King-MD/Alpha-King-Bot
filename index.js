@@ -27,6 +27,7 @@ const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 const fluentFfmpeg = require('fluent-ffmpeg');
 fluentFfmpeg.setFfmpegPath(ffmpegPath);
+let botActive = true;
 
 
 const mongoose = require('mongoose');
@@ -137,6 +138,14 @@ const isBanned = await BannedUser.findOne({ userId: sender });
 if (isBanned && !config.owner.includes(sender.split('@')[0])) {
     return; 
 }
+
+
+// 🔒 බොට් ON/OFF චෙක් කිරීම
+if (!botActive && command !== 'start' && !config.owner.includes(sender.split('@')[0])) {
+    return; // බොට් OFF නම් සහ කමාන්ඩ් එක 'start' නෙවෙයි නම් මුකුත්ම කරන්නේ නැහැ
+}
+
+
 
 
 
@@ -1073,15 +1082,46 @@ break;
 
 //----------------------------------------------------------------------------------------------------------------------------
 
-// 22
+// 22 Start
+
+case 'start': {
+    const isOwner = config.owner.includes(sender.split('@')[0]);
+    if (!isOwner) return;
+
+    botActive = true;
+    await sock.sendMessage(remoteJid, { text: '🟢 *ALPHA-KING සක්‍රිය කළා!* \nදැන් පද්ධතිය සාමාන්‍ය පරිදි ක්‍රියාත්මකයි.' });
+}
+break;
 
 //----------------------------------------------------------------------------------------------------------------------------
 
-// 23
+// 23 Stop
+
+case 'stop': {
+    const isOwner = config.owner.includes(sender.split('@')[0]);
+    if (!isOwner) return;
+
+    botActive = false;
+    await sock.sendMessage(remoteJid, { text: '🔴 *ALPHA-KING අක්‍රිය කළා!* \nදැන් මම කිසිදු කමාන්ඩ් එකකට රිප්ලයි නොකරමි.' });
+}
+break;
 
 //----------------------------------------------------------------------------------------------------------------------------
 
-// 24
+// 24 Restart
+
+case 'restart': {
+    const isOwner = config.owner.includes(sender.split('@')[0]);
+    if (!isOwner) return;
+
+    await sock.sendMessage(remoteJid, { text: '🔄 *ALPHA-KING පද්ධතිය නැවත පණගැන්වෙමින් පවතී...*' });
+
+    // Node process එක නවත්වනවා. Render එකෙන් මේක auto ආයෙත් Start කරනවා.
+    setTimeout(() => {
+        process.exit();
+    }, 2000);
+}
+break;
 
 //----------------------------------------------------------------------------------------------------------------------------
 
