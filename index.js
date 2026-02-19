@@ -1111,15 +1111,23 @@ break;
 // 24 Restart
 
 case 'restart': {
+    const sender = msg.key.participant || msg.key.remoteJid;
     const isOwner = config.owner.includes(sender.split('@')[0]);
-    if (!isOwner) return;
 
-    await sock.sendMessage(remoteJid, { text: '🔄 *ALPHA-KING පද්ධතිය නැවත පණගැන්වෙමින් පවතී...*' });
+    if (!isOwner) return await sock.sendMessage(remoteJid, { text: '⚠️ මෙය අයිතිකරුට පමණි!' }, { quoted: msg });
 
-    // Node process එක නවත්වනවා. Render එකෙන් මේක auto ආයෙත් Start කරනවා.
+    await sock.sendMessage(remoteJid, { text: '🔄 *ALPHA-KING අභ්‍යන්තරව නැවත පණගැන්වෙමින් පවතී...*' }, { quoted: msg });
+
+    console.log("Internal restart triggered...");
+
+    // 1. දැනට තියෙන කනෙක්ශන් එක නවත්වනවා
+    sock.logout(); 
+    sock.end();
+
+    // 2. තත්පර 3කින් මුළු ෆන්ක්ෂන් එකම ආයෙත් රන් කරනවා
     setTimeout(() => {
-        process.exit();
-    }, 2000);
+        connectToWhatsApp(); // 👈 ඔයාගේ බොට් ස්ටාර්ට් කරන main function එකේ නම මෙතනට දාන්න
+    }, 3000);
 }
 break;
 
