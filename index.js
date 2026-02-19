@@ -146,12 +146,19 @@ if (!botActive && command !== 'start' && !config.owner.includes(sender.split('@'
 }
 
 
-// 🔒 බොට් OFF නම් සහ එවපු කෙනා Owner නෙවෙයි නම් පල්ලෙහාට යන්න දෙන්නේ නැහැ
-const lockSender = msg.key.participant || msg.key.remoteJid;
-const isOwnerForLock = config.owner.some(num => lockSender.includes(num));
 
 if (!botActive && !isOwnerForLock) {
     return; // බොට් OFF වෙලාවක සාමාන්‍ය අයට කිසිම රිප්ලයි එකක් යන්නේ නැහැ
+}
+
+
+// 🔒 නිවැරදි කළ Lock එක
+const lockSender = (msg.key.participant || msg.key.remoteJid).replace(/[^0-9]/g, '');
+const lockOwner = config.owner.toString().replace(/[^0-9]/g, '');
+const isOwnerForLock = lockSender.includes(lockOwner) || lockOwner.includes(lockSender);
+
+if (!botActive && !isOwnerForLock) {
+    return;
 }
 
 
@@ -1095,35 +1102,43 @@ break;
 
 case 'start': {
     const sender = msg.key.participant || msg.key.remoteJid;
-    const senderNumber = sender.split('@')[0].split(':')[0];
-    const isOwner = config.owner.some(ownerNum => senderNumber.includes(ownerNum));
+    const senderNumber = sender.replace(/[^0-9]/g, '');
+    const ownerNumber = config.owner.toString().replace(/[^0-9]/g, '');
+    
+    const isOwner = senderNumber.includes(ownerNumber) || ownerNumber.includes(senderNumber);
 
-    // ⛔ Owner නෙවෙයි නම් මැසේජ් එකක් යවා මෙතනින් නවත්වනවා
     if (!isOwner) {
         return await sock.sendMessage(remoteJid, { text: '⚠️ මෙය කළ හැක්කේ බොට් අයිතිකරුට (Owner) පමණි!' }, { quoted: msg });
     }
 
-    botActive = true; // බොට්ව සක්‍රිය කරනවා
-    await sock.sendMessage(remoteJid, { text: '🟢 *ALPHA-KING සක්‍රිය කළා (ON)!* \nදැන් පද්ධතිය සාමාන්‍ය පරිදි ක්‍රියාත්මකයි.' }, { quoted: msg });
+    botActive = true;
+    await sock.sendMessage(remoteJid, { text: '🟢 *ALPHA-KING සක්‍රිය කළා (ON)!*' }, { quoted: msg });
 }
 break;
-
 //----------------------------------------------------------------------------------------------------------------------------
 
 // 23 Stop
 
 case 'stop': {
+    // 1. එවපු කෙනාගේ JID එක පිරිසිදු කරගන්නවා
     const sender = msg.key.participant || msg.key.remoteJid;
-    const senderNumber = sender.split('@')[0].split(':')[0];
-    const isOwner = config.owner.some(ownerNum => senderNumber.includes(ownerNum));
+    const senderNumber = sender.replace(/[^0-9]/g, ''); // නම්බර් එකේ තියෙන ඉලක්කම් විතරක් ගන්නවා
 
-    // ⛔ Owner නෙවෙයි නම් මැසේජ් එකක් යවා මෙතනින් නවත්වනවා
+    // 2. Config එකේ තියෙන owner නම්බර් එකත් පිරිසිදු කරගන්නවා
+    const ownerNumber = config.owner.toString().replace(/[^0-9]/g, '');
+
+    // 3. දෙකම සමානද කියලා බලනවා (දෙකේම නම්බර් එක ඇතුළත්ද කියලා බලනවා)
+    const isOwner = senderNumber.includes(ownerNumber) || ownerNumber.includes(senderNumber);
+
+    console.log("Cleaned Sender: " + senderNumber);
+    console.log("Cleaned Owner: " + ownerNumber);
+
     if (!isOwner) {
         return await sock.sendMessage(remoteJid, { text: '⚠️ මෙය කළ හැක්කේ බොට් අයිතිකරුට (Owner) පමණි!' }, { quoted: msg });
     }
 
-    botActive = false; // බොට්ව අක්‍රිය කරනවා
-    await sock.sendMessage(remoteJid, { text: '🔴 *ALPHA-KING අක්‍රිය කළා (OFF)!* \nදැන් මම කිසිදු කමාන්ඩ් එකකට ප්‍රතිචාර නොදක්වමි.' }, { quoted: msg });
+    botActive = false;
+    await sock.sendMessage(remoteJid, { text: '🔴 *ALPHA-KING අක්‍රිය කළා (OFF)!*' }, { quoted: msg });
 }
 break;
 
