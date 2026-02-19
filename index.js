@@ -1111,22 +1111,33 @@ break;
 // 24 Restart
 
 case 'restart': {
+    // 1. Sender ගේ නම්බර් එක පිරිසිදුවට ගන්නවා (JID එකෙන් නම්බර් එක විතරක් වෙන් කරනවා)
     const sender = msg.key.participant || msg.key.remoteJid;
-    const isOwner = config.owner.includes(sender.split('@')[0]);
+    const senderNumber = sender.split('@')[0].split(':')[0]; // මේකෙන් 947... කෑල්ල විතරක් එනවා
 
-    if (!isOwner) return await sock.sendMessage(remoteJid, { text: '⚠️ මෙය අයිතිකරුට පමණි!' }, { quoted: msg });
+    // 2. Owner Check එක (Config එකේ නම්බර් එක එක්ක හරියටම ගැලපෙනවද බලනවා)
+    const isOwner = config.owner.includes(senderNumber);
 
+    console.log("Sender Number: " + senderNumber); // Debugging: ටර්මිනල් එකේ බලන්න නම්බර් එක එන විදිහ
+    console.log("Is Owner: " + isOwner);
+
+    if (!isOwner) {
+        return await sock.sendMessage(remoteJid, { text: '⚠️ මෙය කළ හැක්කේ බොට් අයිතිකරුට පමණි!' }, { quoted: msg });
+    }
+
+    // 3. Restart මැසේජ් එක
     await sock.sendMessage(remoteJid, { text: '🔄 *ALPHA-KING අභ්‍යන්තරව නැවත පණගැන්වෙමින් පවතී...*' }, { quoted: msg });
 
+    // 4. Internal Restart (Render මත යැපෙන්නේ නැතිව)
     console.log("Internal restart triggered...");
-
-    // 1. දැනට තියෙන කනෙක්ශන් එක නවත්වනවා
-    sock.logout(); 
-    sock.end();
-
-    // 2. තත්පර 3කින් මුළු ෆන්ක්ෂන් එකම ආයෙත් රන් කරනවා
+    
+    // දැනට තියෙන කනෙක්ශන් එක නවත්වනවා
+    if (sock.end) sock.end(); 
+    
     setTimeout(() => {
-        connectToWhatsApp(); // 👈 ඔයාගේ බොට් ස්ටාර්ට් කරන main function එකේ නම මෙතනට දාන්න
+        // මෙතන 'startAlphaBot' කියන තැනට ඔයාගේ main function එකේ නම දාන්න.
+        // උදා: connectToWhatsApp() හෝ start()
+        connectToWhatsApp(); 
     }, 3000);
 }
 break;
