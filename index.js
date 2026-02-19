@@ -1111,37 +1111,41 @@ break;
 // 24 Restart
 
 case 'restart': {
-    // 1. Sender ගේ නම්බර් එක පිරිසිදුවට ගන්නවා (JID එකෙන් නම්බර් එක විතරක් වෙන් කරනවා)
+    // 1. Sender ගේ JID එක ගන්නවා
     const sender = msg.key.participant || msg.key.remoteJid;
-    const senderNumber = sender.split('@')[0].split(':')[0]; // මේකෙන් 947... කෑල්ල විතරක් එනවා
+    
+    // 2. JID එකෙන් ඇත්තම නම්බර් එක විතරක් Extract කරගන්නවා
+    // (උදා: 223301...8469@s.whatsapp.net එකෙන් 947... නම්බර් එක වෙන් කරගැනීම)
+    const jidToNum = (jid) => {
+        if (!jid) return '';
+        return jid.split('@')[0].split(':')[0];
+    };
+    
+    const senderNumber = jidToNum(sender);
 
-    // 2. Owner Check එක (Config එකේ නම්බර් එක එක්ක හරියටම ගැලපෙනවද බලනවා)
-    const isOwner = config.owner.includes(senderNumber);
+    // 3. Owner Check - මෙතනදී config එකේ තියෙන නම්බර් එක senderNumber එකේ තියෙනවද බලනවා
+    const isOwner = config.owner.some(ownerNum => senderNumber.includes(ownerNum));
 
-    console.log("Sender Number: " + senderNumber); // Debugging: ටර්මිනල් එකේ බලන්න නම්බර් එක එන විදිහ
+    console.log("Cleaned Sender Number: " + senderNumber);
     console.log("Is Owner: " + isOwner);
 
     if (!isOwner) {
         return await sock.sendMessage(remoteJid, { text: '⚠️ මෙය කළ හැක්කේ බොට් අයිතිකරුට පමණි!' }, { quoted: msg });
     }
 
-    // 3. Restart මැසේජ් එක
     await sock.sendMessage(remoteJid, { text: '🔄 *ALPHA-KING අභ්‍යන්තරව නැවත පණගැන්වෙමින් පවතී...*' }, { quoted: msg });
 
-    // 4. Internal Restart (Render මත යැපෙන්නේ නැතිව)
-    console.log("Internal restart triggered...");
-    
-    // දැනට තියෙන කනෙක්ශන් එක නවත්වනවා
-    if (sock.end) sock.end(); 
+    // 4. Internal Restart
+    sock.end(); 
     
     setTimeout(() => {
-        // මෙතන 'startAlphaBot' කියන තැනට ඔයාගේ main function එකේ නම දාන්න.
-        // උදා: connectToWhatsApp() හෝ start()
+        // ඔයාගේ main function එක මෙතන කෝල් කරන්න
         connectToWhatsApp(); 
     }, 3000);
 }
 break;
 
+//connectToWhatsApp
 //----------------------------------------------------------------------------------------------------------------------------
 
 // 25
