@@ -215,6 +215,7 @@ if (fs.existsSync('./bot_status.json')) {
 const currentSender = (msg.key.participant || msg.key.remoteJid).replace(/[^0-9]/g, '');
 const currentOwner = config.owner.toString().replace(/[^0-9]/g, '');
 const isOwnerNow = currentSender.includes(currentOwner) || currentOwner.includes(currentSender);
+const isOwnerForLock = lockSender.includes(lockOwner) || lockOwner.includes(lockSender);
 
 if (!botActive && command !== 'start' && !isOwnerNow) {
     return; // බොට් Mute වෙලා නම් මෙතනින් නවතිනවා
