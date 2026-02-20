@@ -27,7 +27,40 @@ const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 const fluentFfmpeg = require('fluent-ffmpeg');
 fluentFfmpeg.setFfmpegPath(ffmpegPath);
-let botActive = true;
+
+
+const { createClient } = require('@supabase/supabase-js');
+
+// API URL එක සහ anon key එක මෙතනට දාන්න
+const supabaseUrl = 'https://uvsuixatriferpmyfqib.supabase.co'; 
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2c3VpeGF0cmlmZXJwbXlmcWliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NTc4ODEsImV4cCI6MjA4NzEzMzg4MX0.39Yq8LpNnsUHDWX9iVmL2FA8m6Q_MIitRa9tOBVJF50';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+let botActive = true; // මේක default තියාගන්න
+
+async function checkStatus() {
+    try {
+        const { data, error } = await supabase
+            .from('Bot Status') // උඹ හදපු ටේබල් එකේ නම
+            .select('value')
+            .eq('key', 'bot_active')
+            .single();
+
+        if (data) {
+            botActive = data.value;
+            console.log(`[DATABASE] Bot Status is: ${botActive ? 'ON' : 'OFF'}`);
+        } else {
+            // මුල්ම වතාව නිසා ඩේටාබේස් එකේ අලුත් row එකක් හදනවා
+            await supabase.from('Bot Status').insert([{ key: 'bot_active', value: true }]);
+            botActive = true;
+        }
+    } catch (e) {
+        console.log("Database connection error: ", e);
+    }
+}
+
+// බොට් පටන් ගන්නකොටම මේක වැඩ කරන්න ඕනේ
+checkStatus();
 
 
 
@@ -1170,18 +1203,21 @@ case 'stop': {
     const ownerNum = config.owner.toString().replace(/[^0-9]/g, '');
     const isOwner = sender.includes(ownerNum) || ownerNum.includes(sender);
 
-    if (!isOwner) {
-        return await sock.sendMessage(remoteJid, { text: '⚠️ මෙය කළ හැක්කේ බොට් අයිතිකරුට (Owner) පමණි!' }, { quoted: msg });
+    if (!isOwner) return await sock.sendMessage(remoteJid, { text: '⚠️ මෙය කළ හැක්කේ බොට් අයිතිකරුට පමණි!' }, { quoted: msg });
+
+    // --- [ DATABASE ACTION ] ---
+    botActive = false;
+    const { error } = await supabase
+        .from('Bot Status')
+        .update({ value: false })
+        .eq('key', 'bot_active');
+
+    if (error) {
+        console.log("Database update error:", error);
+        return await sock.sendMessage(remoteJid, { text: '❌ ඩේටාබේස් එකට සම්බන්ධ වීමේ දෝෂයකි.' }, { quoted: msg });
     }
 
-    // --- [ ACTION ] ---
-    botActive = false;
-    // Status එක ෆයිල් එකක සේව් කරනවා (Restart වුණත් මතක තබා ගැනීමට)
-    fs.writeFileSync('./bot_status.json', JSON.stringify({ active: false }));
-
-    await sock.sendMessage(remoteJid, { 
-        text: '🔇 *ALPHA-KING නිහඬ කළා (OFF)!* \n\nදැන් මම කිසිදු කමාන්ඩ් එකකට ප්‍රතිචාර නොදක්වමි. නැවත ක්‍රියාත්මක කිරීමට `.start` පාවිච්චි කරන්න.' 
-    }, { quoted: msg });
+    await sock.sendMessage(remoteJid, { text: '🔇 *ALPHA-KING නිහඬ කළා!* \nමම දැන් සම්පූර්ණයෙන්ම OFF. නැවත පණ ගැන්වීමට `.start` පාවිච්චි කරන්න.' }, { quoted: msg });
 }
 break;
 
@@ -1195,18 +1231,21 @@ case 'start': {
     const ownerNum = config.owner.toString().replace(/[^0-9]/g, '');
     const isOwner = sender.includes(ownerNum) || ownerNum.includes(sender);
 
-    if (!isOwner) {
-        return await sock.sendMessage(remoteJid, { text: '⚠️ මෙය කළ හැක්කේ බොට් අයිතිකරුට (Owner) පමණි!' }, { quoted: msg });
+    if (!isOwner) return await sock.sendMessage(remoteJid, { text: '⚠️ මෙය කළ හැක්කේ බොට් අයිතිකරුට පමණි!' }, { quoted: msg });
+
+    // --- [ DATABASE ACTION ] ---
+    botActive = true;
+    const { error } = await supabase
+        .from('Bot Status')
+        .update({ value: true })
+        .eq('key', 'bot_active');
+
+    if (error) {
+        console.log("Database update error:", error);
+        return await sock.sendMessage(remoteJid, { text: '❌ ඩේටාබේස් එකට සම්බන්ධ වීමේ දෝෂයකි.' }, { quoted: msg });
     }
 
-    // --- [ ACTION ] ---
-    botActive = true;
-    // Status එක ෆයිල් එකක 'true' ලෙස සේව් කරනවා
-    fs.writeFileSync('./bot_status.json', JSON.stringify({ active: true }));
-
-    await sock.sendMessage(remoteJid, { 
-        text: '🔊 *ALPHA-KING සක්‍රිය කළා (ON)!* \n\nදැන් පද්ධතිය සාමාන්‍ය පරිදි ක්‍රියාත්මකයි. ඔබගේ විධානයන් ලබා දිය හැක.' 
-    }, { quoted: msg });
+    await sock.sendMessage(remoteJid, { text: '🔊 *ALPHA-KING සක්‍රිය කළා!* \nපද්ධතිය දැන් සාමාන්‍ය පරිදි ක්‍රියාත්මකයි.' }, { quoted: msg });
 }
 break;
 
