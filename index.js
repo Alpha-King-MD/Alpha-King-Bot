@@ -193,7 +193,11 @@ if (!botActive && !isOwnerForLock) {
 // 🔒 Gatekeeper: බොට් mute කරලා නම් owner ගේ 'start' එකට විතරයි ඉඩ දෙන්නේ
 const lockSender = (msg.key.participant || msg.key.remoteJid).replace(/[^0-9]/g, '');
 const lockOwner = config.owner.toString().replace(/[^0-9]/g, '');
-const isOwnerForLock = lockSender.includes(lockOwner) || lockOwner.includes(lockSender);
+const isBotOwner = lockSender.includes(lockOwner) || lockOwner.includes(lockSender);
+
+if (!botActive && command !== 'start' && !isBotOwner) {
+    return;
+}
 
 if (!botActive && command !== 'start' && !isOwnerForLock) {
     return; // බොට් මුකුත් කරන්නේ නැහැ (Muted)
@@ -1198,26 +1202,13 @@ break;
 // 23 Stop
 
 case 'stop': {
-    // --- [ OWNER CHECK ] ---
-    const sender = (msg.key.participant || msg.key.remoteJid).replace(/[^0-9]/g, '');
-    const ownerNum = config.owner.toString().replace(/[^0-9]/g, '');
-    const isOwner = sender.includes(ownerNum) || ownerNum.includes(sender);
+    if (!isBotOwner) return await sock.sendMessage(remoteJid, { text: '⚠️ අයිතිකරුට පමණි!' }, { quoted: msg });
 
-    if (!isOwner) return await sock.sendMessage(remoteJid, { text: '⚠️ මෙය කළ හැක්කේ බොට් අයිතිකරුට පමණි!' }, { quoted: msg });
-
-    // --- [ DATABASE ACTION ] ---
     botActive = false;
-    const { error } = await supabase
-        .from('Bot Status')
-        .update({ value: false })
-        .eq('key', 'bot_active');
+    // ඩේටාබේස් එක Update කරනවා
+    await supabase.from('Bot Status').update({ value: false }).eq('key', 'bot_active');
 
-    if (error) {
-        console.log("Database update error:", error);
-        return await sock.sendMessage(remoteJid, { text: '❌ ඩේටාබේස් එකට සම්බන්ධ වීමේ දෝෂයකි.' }, { quoted: msg });
-    }
-
-    await sock.sendMessage(remoteJid, { text: '🔇 *ALPHA-KING නිහඬ කළා!* \nමම දැන් සම්පූර්ණයෙන්ම OFF. නැවත පණ ගැන්වීමට `.start` පාවිච්චි කරන්න.' }, { quoted: msg });
+    await sock.sendMessage(remoteJid, { text: '🔇 *ALPHA-KING නිහඬ කළා!* \nමම දැන් ස්ථිරවම OFF.' }, { quoted: msg });
 }
 break;
 
@@ -1226,26 +1217,13 @@ break;
 // 24 Start
 
 case 'start': {
-    // --- [ OWNER CHECK ] ---
-    const sender = (msg.key.participant || msg.key.remoteJid).replace(/[^0-9]/g, '');
-    const ownerNum = config.owner.toString().replace(/[^0-9]/g, '');
-    const isOwner = sender.includes(ownerNum) || ownerNum.includes(sender);
+    if (!isBotOwner) return await sock.sendMessage(remoteJid, { text: '⚠️ අයිතිකරුට පමණි!' }, { quoted: msg });
 
-    if (!isOwner) return await sock.sendMessage(remoteJid, { text: '⚠️ මෙය කළ හැක්කේ බොට් අයිතිකරුට පමණි!' }, { quoted: msg });
-
-    // --- [ DATABASE ACTION ] ---
     botActive = true;
-    const { error } = await supabase
-        .from('Bot Status')
-        .update({ value: true })
-        .eq('key', 'bot_active');
+    // ඩේටාබේස් එක Update කරනවා
+    await supabase.from('Bot Status').update({ value: true }).eq('key', 'bot_active');
 
-    if (error) {
-        console.log("Database update error:", error);
-        return await sock.sendMessage(remoteJid, { text: '❌ ඩේටාබේස් එකට සම්බන්ධ වීමේ දෝෂයකි.' }, { quoted: msg });
-    }
-
-    await sock.sendMessage(remoteJid, { text: '🔊 *ALPHA-KING සක්‍රිය කළා!* \nපද්ධතිය දැන් සාමාන්‍ය පරිදි ක්‍රියාත්මකයි.' }, { quoted: msg });
+    await sock.sendMessage(remoteJid, { text: '🔊 *ALPHA-KING සක්‍රිය කළා!*' }, { quoted: msg });
 }
 break;
 

@@ -21,7 +21,7 @@
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@google/generative-ai": "^0.24.1",
-    "@supabase/supabase-js": "^2.97.0",
+    "@supabase/supabase-js": "^2.39.7",
     "@whiskeysockets/baileys": "^7.0.0-rc.9",
     "axios": "^1.13.5",
     "express": "^5.2.1",
