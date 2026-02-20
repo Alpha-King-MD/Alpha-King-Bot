@@ -28,7 +28,7 @@ const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 const fluentFfmpeg = require('fluent-ffmpeg');
 fluentFfmpeg.setFfmpegPath(ffmpegPath);
 let botActive = true;
-const fs = require('fs');
+
 
 
 const mongoose = require('mongoose');
@@ -170,7 +170,6 @@ if (!botActive && command !== 'start' && !isOwnerForLock) {
 
 
 // බොට් පටන් ගන්නකොට කලින් සේව් කරපු status එක කියවනවා
-let botActive = true;
 if (fs.existsSync('./bot_status.json')) {
     const statusData = JSON.parse(fs.readFileSync('./bot_status.json'));
     botActive = statusData.active;
