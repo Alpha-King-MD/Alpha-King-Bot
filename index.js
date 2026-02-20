@@ -28,6 +28,7 @@ const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 const fluentFfmpeg = require('fluent-ffmpeg');
 fluentFfmpeg.setFfmpegPath(ffmpegPath);
 let botActive = true;
+const fs = require('fs');
 
 
 const mongoose = require('mongoose');
@@ -166,6 +167,17 @@ const isOwnerForLock = lockSender.includes(lockOwner) || lockOwner.includes(lock
 if (!botActive && command !== 'start' && !isOwnerForLock) {
     return; // බොට් මුකුත් කරන්නේ නැහැ (Muted)
 }
+
+
+// බොට් පටන් ගන්නකොට කලින් සේව් කරපු status එක කියවනවා
+let botActive = true;
+if (fs.existsSync('./bot_status.json')) {
+    const statusData = JSON.parse(fs.readFileSync('./bot_status.json'));
+    botActive = statusData.active;
+}
+
+
+
 
 
 
@@ -1105,39 +1117,7 @@ break;
 
 //----------------------------------------------------------------------------------------------------------------------------
 
-// 22 Start
-
-case 'start': {
-    const sender = (msg.key.participant || msg.key.remoteJid).replace(/[^0-9]/g, '');
-    const ownerNum = config.owner.toString().replace(/[^0-9]/g, '');
-    const isOwner = sender.includes(ownerNum) || ownerNum.includes(sender);
-
-    if (!isOwner) return await sock.sendMessage(remoteJid, { text: '⚠️ මෙය අයිතිකරුට පමණි!' }, { quoted: msg });
-
-    botActive = true; // බොට්ව ආයෙත් active කරනවා
-    await sock.sendMessage(remoteJid, { text: '🔊 *ALPHA-KING සක්‍රිය කළා (Active)!*' }, { quoted: msg });
-}
-break;
-
-//----------------------------------------------------------------------------------------------------------------------------
-
-// 23 Stop
-
-case 'stop': {
-    const sender = (msg.key.participant || msg.key.remoteJid).replace(/[^0-9]/g, '');
-    const ownerNum = config.owner.toString().replace(/[^0-9]/g, '');
-    const isOwner = sender.includes(ownerNum) || ownerNum.includes(sender);
-
-    if (!isOwner) return await sock.sendMessage(remoteJid, { text: '⚠️ මෙය අයිතිකරුට පමණි!' }, { quoted: msg });
-
-    botActive = false; // බොට් mute කරනවා
-    await sock.sendMessage(remoteJid, { text: '🔇 *ALPHA-KING නිහඬ කළා (Muted)!* \nදැන් මම කිසිදු කමාන්ඩ් එකකට ප්‍රතිචාර නොදක්වමි.' }, { quoted: msg });
-}
-break;
-
-//----------------------------------------------------------------------------------------------------------------------------
-
-// 24 Restart
+// 22 Restart
 
 case 'restart': {
     // 1. Sender ගේ JID එක ගන්නවා
@@ -1174,7 +1154,56 @@ case 'restart': {
 }
 break;
 
-//connectToWhatsApp
+//----------------------------------------------------------------------------------------------------------------------------
+
+// 23 Stop
+
+case 'stop': {
+    // --- [ OWNER CHECK ] ---
+    const sender = (msg.key.participant || msg.key.remoteJid).replace(/[^0-9]/g, '');
+    const ownerNum = config.owner.toString().replace(/[^0-9]/g, '');
+    const isOwner = sender.includes(ownerNum) || ownerNum.includes(sender);
+
+    if (!isOwner) {
+        return await sock.sendMessage(remoteJid, { text: '⚠️ මෙය කළ හැක්කේ බොට් අයිතිකරුට (Owner) පමණි!' }, { quoted: msg });
+    }
+
+    // --- [ ACTION ] ---
+    botActive = false;
+    // Status එක ෆයිල් එකක සේව් කරනවා (Restart වුණත් මතක තබා ගැනීමට)
+    fs.writeFileSync('./bot_status.json', JSON.stringify({ active: false }));
+
+    await sock.sendMessage(remoteJid, { 
+        text: '🔇 *ALPHA-KING නිහඬ කළා (OFF)!* \n\nදැන් මම කිසිදු කමාන්ඩ් එකකට ප්‍රතිචාර නොදක්වමි. නැවත ක්‍රියාත්මක කිරීමට `.start` පාවිච්චි කරන්න.' 
+    }, { quoted: msg });
+}
+break;
+
+//----------------------------------------------------------------------------------------------------------------------------
+
+// 24 Start
+
+case 'start': {
+    // --- [ OWNER CHECK ] ---
+    const sender = (msg.key.participant || msg.key.remoteJid).replace(/[^0-9]/g, '');
+    const ownerNum = config.owner.toString().replace(/[^0-9]/g, '');
+    const isOwner = sender.includes(ownerNum) || ownerNum.includes(sender);
+
+    if (!isOwner) {
+        return await sock.sendMessage(remoteJid, { text: '⚠️ මෙය කළ හැක්කේ බොට් අයිතිකරුට (Owner) පමණි!' }, { quoted: msg });
+    }
+
+    // --- [ ACTION ] ---
+    botActive = true;
+    // Status එක ෆයිල් එකක 'true' ලෙස සේව් කරනවා
+    fs.writeFileSync('./bot_status.json', JSON.stringify({ active: true }));
+
+    await sock.sendMessage(remoteJid, { 
+        text: '🔊 *ALPHA-KING සක්‍රිය කළා (ON)!* \n\nදැන් පද්ධතිය සාමාන්‍ය පරිදි ක්‍රියාත්මකයි. ඔබගේ විධානයන් ලබා දිය හැක.' 
+    }, { quoted: msg });
+}
+break;
+
 //----------------------------------------------------------------------------------------------------------------------------
 
 // 25
