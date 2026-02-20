@@ -154,9 +154,7 @@ if (!botActive && !isOwnerForLock) {
 
 
 
-if (!botActive && !isOwnerForLock) {
-    return;
-}
+
 
 
 // 🔒 Gatekeeper: බොට් mute කරලා නම් owner ගේ 'start' එකට විතරයි ඉඩ දෙන්නේ
@@ -175,6 +173,15 @@ if (fs.existsSync('./bot_status.json')) {
     botActive = statusData.active;
 }
 
+
+// 🔒 නිවැරදි කළ ලොක් එක (Switch එකට උඩින් තිබිය යුතුයි)
+const currentSender = (msg.key.participant || msg.key.remoteJid).replace(/[^0-9]/g, '');
+const currentOwner = config.owner.toString().replace(/[^0-9]/g, '');
+const isOwnerNow = currentSender.includes(currentOwner) || currentOwner.includes(currentSender);
+
+if (!botActive && command !== 'start' && !isOwnerNow) {
+    return; // බොට් Mute වෙලා නම් මෙතනින් නවතිනවා
+}
 
 
 
