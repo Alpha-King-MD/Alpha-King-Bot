@@ -1116,116 +1116,61 @@ break;
 
 //----------------------------------------------------------------------------------------------------------------------------
 
-// 20 Mute
+// 20 Grtdp
 
-case 'mute': {
-    const groupMetadata = await sock.groupMetadata(remoteJid);
-    const admins = groupMetadata.participants.filter(v => v.admin !== null).map(v => v.id);
-    const isAdmins = admins.includes(msg.key.participant || msg.key.remoteJid);
-    const isOwner = config.owner.includes(msg.key.participant ? msg.key.participant.split('@')[0] : '');
-
-    if (!isAdmins && !isOwner) return await sock.sendMessage(remoteJid, { text: '⚠️ ඇඩ්මින්ලාට පමණයි!' });
-
-    let user = msg.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || msg.message.extendedTextMessage?.contextInfo?.participant;
-    if (!user) return await sock.sendMessage(remoteJid, { text: 'කරුණාකර යූසර් කෙනෙක්ව Mention කරන්න.' });
-
+case 'getdp': {
     try {
-        await new BannedUser({ userId: user }).save();
-        await sock.sendMessage(remoteJid, { text: `✅ @${user.split('@')[0]} ව පද්ධතියෙන් Mute කළා.`, mentions: [user] });
+        // --- [ Access Control ] ---
+        const sender = (msg.key.participant || msg.key.remoteJid).replace(/[^0-9]/g, '');
+        const ownerNum = config.owner.toString().replace(/[^0-9]/g, '');
+        const isOwner = sender.includes(ownerNum) || ownerNum.includes(sender);
+        
+        const groupMetadata = msg.key.remoteJid.endsWith('@g.us') ? await sock.groupMetadata(remoteJid) : null;
+        const participants = groupMetadata ? groupMetadata.participants : [];
+        const admins = participants.filter(v => v.admin !== null).map(v => v.id);
+        const isAdmin = admins.includes(msg.key.participant || msg.key.remoteJid);
+
+        // මේ IF එක අයින් කළොත් ඕනෑම කෙනෙක්ට පාවිච්චි කළ හැක
+        if (!isOwner && !isAdmin) {
+            return await sock.sendMessage(remoteJid, { text: '⚠️ මෙම කමාන්ඩ් එක පාවිච්චි කිරීමට ඔබ Admin කෙනෙකු හෝ අයිතිකරු විය යුතුය!' }, { quoted: msg });
+        }
+
+        // --- [ DP එක ලබාගැනීම ] ---
+        let targetUser = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || 
+                         msg.message?.extendedTextMessage?.contextInfo?.participant || 
+                         remoteJid;
+
+        // WhatsApp එකෙන් DP URL එක ඉල්ලනවා
+        // මෙතනදී DP එකක් නැත්නම් error එකක් throw වෙනවා, ඒක catch එකෙන් අල්ලනවා
+        const ppUrl = await sock.profilePictureUrl(targetUser, 'image');
+
+        await sock.sendMessage(remoteJid, { 
+            image: { url: ppUrl }, 
+            caption: `✅ මෙන්න Profile Picture එක!` 
+        }, { quoted: msg });
+
     } catch (e) {
-        await sock.sendMessage(remoteJid, { text: 'මොහු දැනටමත් Mute කර ඇත.' });
+        // මෙතනදී තමයි DP එකක් නැති වුණාම හෝ ගන්න බැරි වුණාම මැසේජ් එක යවන්නේ
+        await sock.sendMessage(remoteJid, { text: '❌ මෙම ගිණුමට Profile Picture එකක් එක්කර නැත, නැතහොත් එහි පුද්ගලිකත්ව සැකසුම් (Privacy) නිසා ලබාගත නොහැක.' }, { quoted: msg });
     }
 }
 break;
 
 //----------------------------------------------------------------------------------------------------------------------------
 
-// 21 Unmute
-
-case 'unmute': {
-    const groupMetadata = await sock.groupMetadata(remoteJid);
-    const admins = groupMetadata.participants.filter(v => v.admin !== null).map(v => v.id);
-    const isAdmins = admins.includes(msg.key.participant || msg.key.remoteJid);
-    const isOwner = config.owner.includes(msg.key.participant ? msg.key.participant.split('@')[0] : '');
-
-    if (!isAdmins && !isOwner) return;
-
-    let user = msg.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || msg.message.extendedTextMessage?.contextInfo?.participant;
-    if (!user) return;
-
-    await BannedUser.deleteOne({ userId: user });
-    await sock.sendMessage(remoteJid, { text: `✅ @${user.split('@')[0]} ව නැවත නිදහස් කළා.`, mentions: [user] });
-}
-break;
+// 21 
 
 //----------------------------------------------------------------------------------------------------------------------------
 
-// 22 Restart
-
-case 'restart': {
-    // 1. Sender ගේ JID එක ගන්නවා
-    const sender = msg.key.participant || msg.key.remoteJid;
-    
-    // 2. JID එකෙන් ඇත්තම නම්බර් එක විතරක් Extract කරගන්නවා
-    // (උදා: 223301...8469@s.whatsapp.net එකෙන් 947... නම්බර් එක වෙන් කරගැනීම)
-    const jidToNum = (jid) => {
-        if (!jid) return '';
-        return jid.split('@')[0].split(':')[0];
-    };
-    
-    const senderNumber = jidToNum(sender);
-
-    // 3. Owner Check - මෙතනදී config එකේ තියෙන නම්බර් එක senderNumber එකේ තියෙනවද බලනවා
-    const isOwner = config.owner.some(ownerNum => senderNumber.includes(ownerNum));
-
-    console.log("Cleaned Sender Number: " + senderNumber);
-    console.log("Is Owner: " + isOwner);
-
-    if (!isOwner) {
-        return await sock.sendMessage(remoteJid, { text: '⚠️ මෙය කළ හැක්කේ බොට් අයිතිකරුට පමණි!' }, { quoted: msg });
-    }
-
-    await sock.sendMessage(remoteJid, { text: '🔄 *ALPHA-KING අභ්‍යන්තරව නැවත පණගැන්වෙමින් පවතී...*' }, { quoted: msg });
-
-    // 4. Internal Restart
-    sock.end(); 
-    
-    setTimeout(() => {
-        // ඔයාගේ main function එක මෙතන කෝල් කරන්න
-        connectToWhatsApp(); 
-    }, 3000);
-}
-break;
+// 22 
 
 //----------------------------------------------------------------------------------------------------------------------------
 
-// 23 Stop
-
-case 'stop': {
-    if (!isBotOwner) return await sock.sendMessage(remoteJid, { text: '⚠️ අයිතිකරුට පමණි!' }, { quoted: msg });
-
-    botActive = false;
-    // ඩේටාබේස් එක Update කරනවා
-    await supabase.from('Bot Status').update({ value: false }).eq('key', 'bot_active');
-
-    await sock.sendMessage(remoteJid, { text: '🔇 *ALPHA-KING නිහඬ කළා!* \nමම දැන් ස්ථිරවම OFF.' }, { quoted: msg });
-}
-break;
+// 23 
 
 //----------------------------------------------------------------------------------------------------------------------------
 
-// 24 Start
-
-case 'start': {
-    if (!isBotOwner) return await sock.sendMessage(remoteJid, { text: '⚠️ අයිතිකරුට පමණි!' }, { quoted: msg });
-
-    botActive = true;
-    // ඩේටාබේස් එක Update කරනවා
-    await supabase.from('Bot Status').update({ value: true }).eq('key', 'bot_active');
-
-    await sock.sendMessage(remoteJid, { text: '🔊 *ALPHA-KING සක්‍රිය කළා!*' }, { quoted: msg });
-}
-break;
+// 24 
 
 //----------------------------------------------------------------------------------------------------------------------------
 
