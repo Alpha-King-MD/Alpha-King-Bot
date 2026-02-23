@@ -141,7 +141,7 @@ async function connectToWhatsApp() {
 
         const remoteJid = msg.key.remoteJid;
         const isGroup = remoteJid.endsWith('@g.us');
-        const mText = msg.message.imageMessage?.caption || msg.message.videoMessage?.caption || msg.message.conversation || msg.message.extendedTextMessage?.text || "";
+        const mText = msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";
         const command = mText.toLowerCase().split(' ')[0].slice(config.prefix.length);
         
 
