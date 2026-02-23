@@ -1165,6 +1165,8 @@ break;
 // 21 Lv
 
 case 'lv': {
+    const q = msg.message?.extendedTextMessage?.text?.split(' ').slice(1).join(' ') || 
+              msg.message?.conversation?.split(' ').slice(1).join(' ') || "";
     let text = q.split("&"); 
     if (!text[0] || !text[1]) return await sock.sendMessage(remoteJid, { text: `⚠️ කරුණාකර නම් දෙකම ඇතුළත් කරන්න!\n\n*උදාහරණ:* .lv පියුමි & කසුන්` }, { quoted: msg });
 
